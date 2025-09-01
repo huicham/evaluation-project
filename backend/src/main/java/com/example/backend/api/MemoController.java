@@ -2,46 +2,46 @@ package com.example.backend.api;
 
 import com.example.backend.domain.Memo;
 import com.example.backend.service.MemoService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.util.StringUtils;
 
 @RestController
 @RequestMapping("/api/memos")
 public class MemoController {
 
-  private final MemoService memoService;
+    private final MemoService memoService;
 
-  public MemoController(MemoService memoService) {
-    this.memoService = memoService;
-  }
+    public MemoController(MemoService memoService) {
+        this.memoService = memoService;
+    }
 
-  @GetMapping
-  public List<Memo> getAllMemos() {
-    return memoService.findAll();
-  }
-  
-  // --- 추가된 부분 시작 ---
-  @GetMapping("/{id}")
-  public Memo getMemoById(@PathVariable Long id) {
-    return memoService.findById(id);
-  }
-  // --- 추가된 부분 끝 ---
+    @GetMapping
+    public Page<Memo> getAllMemos(@RequestParam(required = false) String keyword, Pageable pageable) {
+        if (StringUtils.hasText(keyword)) {
+            return memoService.searchMemos(keyword, pageable);
+        }
+        return memoService.findAll(pageable);
+    }
 
-  @PostMapping
-  public Memo createMemo(@RequestBody Memo memo) {
-    return memoService.save(memo);
-  }
+    @GetMapping("/{id}")
+    public Memo getMemoById(@PathVariable Long id) {
+        return memoService.findById(id);
+    }
 
-  // --- 추가된 부분 시작 ---
-  @PutMapping("/{id}")
-  public Memo updateMemo(@PathVariable Long id, @RequestBody Memo memoDetails) {
-    return memoService.update(id, memoDetails);
-  }
-  // --- 추가된 부분 끝 ---
+    @PostMapping
+    public Memo createMemo(@RequestBody Memo memo) {
+        return memoService.save(memo);
+    }
 
-  @DeleteMapping("/{id}")
-  public void deleteMemo(@PathVariable Long id) {
-    memoService.delete(id);
-  }
+    @PutMapping("/{id}")
+    public Memo updateMemo(@PathVariable Long id, @RequestBody Memo memoDetails) {
+        return memoService.update(id, memoDetails);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteMemo(@PathVariable Long id) {
+        memoService.delete(id);
+    }
 }

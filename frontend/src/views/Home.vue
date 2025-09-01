@@ -1,60 +1,74 @@
 <script setup>
-import { reactive } from "vue";
-import { StorageService } from "@/services/StorageService";
+import { onMounted, ref } from "vue";
+import { useMemoStore } from "@/stores/memo";
 
-// 스토리지 서비스 생성
-const storageService = new StorageService("myMemo");
+const memoStore = useMemoStore();
+const keyword = ref('');
 
-// 반응형 상태
-const state = reactive({
-  memos: [],
+onMounted(() => {
+  memoStore.fetchMemos();
 });
 
-// onCreated 훅 (async/await 추가)
-(async function onCreated() {
-  state.memos = await storageService.getItems(); // await 추가
-})();
+const search = () => {
+  memoStore.fetchMemos(keyword.value, 0);
+};
 
-// remove 함수 (async/await 추가)
-const remove = async (id) => { // async 추가
-  if(!window.confirm('삭제하시겠습니까?')){
+const changePage = (page) => {
+  memoStore.fetchMemos(keyword.value, page - 1);
+};
+
+const remove = async (id) => {
+  if (!window.confirm('삭제하시겠습니까?')) {
     return;
   }
-
-  await storageService.delItem(id); // await 추가
-  state.memos = await storageService.getItems(); // await 추가
+  await memoStore.deleteMemo(id);
 }
 </script>
 
 <template>
   <div class="memo-list">
-    <!-- 메모를 순회하며 출력 -->
-    <router-link :to="`/memos/${m.id}`" class="item" v-for="m in state.memos" :key="m.id">
+    <div class="search-bar mb-3">
+      <form @submit.prevent="search" class="d-flex">
+        <input type="text" class="form-control me-2" v-model="keyword" placeholder="검색어를 입력하세요">
+        <button type="submit" class="btn btn-primary">검색</button>
+      </form>
+    </div>
+
+    <router-link :to="`/memos/${m.id}`" class="item" v-for="m in memoStore.memos" :key="m.id">
       <div class="d-flex pt-3">
         <div class="pb-3 mb-0 w-100">
           <div class="d-flex justify-content-between">
-            <!-- 메모 제목 -->
             <b>{{ m.title }}</b>
             <div>
               <span role="button" @click.prevent="remove(m.id)">삭제</span>
-              <!-- 추후 구현 -->
             </div>
           </div>
-          <!-- 메모 내용 -->
           <div class="mt-2">{{ m.content }}</div>
         </div>
       </div>
     </router-link>
-    <router-link to="/memos/add" class="add btn btn-light"
-      >+ 추가하기</router-link
-    >
+
+    <nav aria-label="Page navigation" class="d-flex justify-content-center mt-4" v-if="memoStore.totalPages > 0">
+      <ul class="pagination">
+        <li class="page-item" :class="{ disabled: memoStore.currentPage === 0 }">
+          <a class="page-link" href="#" @click.prevent="changePage(memoStore.currentPage)">Previous</a>
+        </li>
+        <li class="page-item" v-for="page in memoStore.totalPages" :key="page" :class="{ active: memoStore.currentPage === page - 1 }">
+          <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+        </li>
+        <li class="page-item" :class="{ disabled: memoStore.currentPage === memoStore.totalPages - 1 }">
+          <a class="page-link" href="#" @click.prevent="changePage(memoStore.currentPage + 2)">Next</a>
+        </li>
+      </ul>
+    </nav>
+
+    <router-link to="/memos/add" class="add btn btn-light mt-3">+ 추가하기</router-link>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .memo-list {
   .item {
-    // ①
     background: #f8f9fa;
     border: 1px solid #eee;
     display: block;
@@ -69,7 +83,6 @@ const remove = async (id) => { // async 추가
   }
 
   .add {
-    // ②
     display: block;
     padding: 25px;
     border: 1px solid #eee;

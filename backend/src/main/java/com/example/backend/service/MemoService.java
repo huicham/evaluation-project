@@ -2,11 +2,12 @@ package com.example.backend.service;
 
 import com.example.backend.domain.Memo;
 import com.example.backend.repository.MemoRepository;
-import jakarta.persistence.EntityNotFoundException; 
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; 
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 public class MemoService {
@@ -17,33 +18,33 @@ public class MemoService {
         this.memoRepository = memoRepository;
     }
 
-    public List<Memo> findAll() {
-        return memoRepository.findAll();
+    public Page<Memo> findAll(Pageable pageable) {
+        return memoRepository.findAll(pageable);
     }
 
-    
     @Transactional(readOnly = true)
     public Memo findById(Long id) {
         return memoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Memo not found with id: " + id));
     }
-    
 
     public Memo save(Memo memo) {
         return memoRepository.save(memo);
     }
 
-    
     @Transactional
     public Memo update(Long id, Memo memoDetails) {
-        Memo memo = findById(id); 
+        Memo memo = findById(id);
         memo.setTitle(memoDetails.getTitle());
         memo.setContent(memoDetails.getContent());
-        return memoRepository.save(memo); 
+        return memoRepository.save(memo);
     }
-    
 
     public void delete(Long id) {
         memoRepository.deleteById(id);
+    }
+
+    public Page<Memo> searchMemos(String keyword, Pageable pageable) {
+        return memoRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable);
     }
 }
